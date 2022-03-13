@@ -207,9 +207,6 @@ class Polynomial:
             self.append(self.str_pol(expr))
         elif isinstance(expr, (Fraction, int, float)):
             self.append(Monomial(expr, 0))
-        # else:
-        # self.append(Monomial(0))
-        # self.monomials = [Monomial(0)] if expr is None else self.str_pol(str(expr)).monomials
 
     def deg(self):
         """The degree of a polynomial is the degree of the non null monomial with the highest degree
@@ -228,10 +225,6 @@ class Polynomial:
         :type degree: int
         :return: None
         """
-        # self.monomials.append(f if c is None else Monomial(f, c))
-
-        # TODO Never append the monomial null Monomial(0) twice.
-
         if degree is None:
             if isinstance(other, Monomial):
                 self.monomials.append(other)
@@ -269,7 +262,6 @@ class Polynomial:
                 if mono.coef > 0:
                     string += "+"
                 string += str(mono)
-        # string = string.replace("", self.var)
         if string.startswith("+"):
             string = string[1:]
         return string if string else "0"
@@ -282,7 +274,6 @@ class Polynomial:
                     if mono.coef > 0:
                         string += "+"
                 string += mono.html_str()
-        # string = string.replace(self.var, self.var)
         if string.startswith("+"):
             string = string[1:]
         return string if string else "0"
@@ -299,7 +290,6 @@ class Polynomial:
         string = ""
         for mono in self:
             if not mono.coef == 0:
-                # if not mono == self.monomials[0] and mono.coef > 0:
                 string += "+"
                 string += mono.eval_str(val)
 
@@ -375,25 +365,22 @@ class Polynomial:
             return Polynomial(0), self
 
         else:
-            self_p = self.copy().reorder(with_null_coefs=True)
-            other_p = other.copy().reorder()
+            self_copy = self.copy().reorder(with_null_coefs=True)
+            other_copy = other.copy().reorder()
             quot = Polynomial()
-            m1, m2 = self_p[0], other_p[0]
+            m1, m2 = self_copy[0], other_copy[0]
 
-            while True:
-                m3 = Monomial(m1.coef / m2.coef, m1.deg - m2.deg)
+            while self_copy and m1.deg - m2.deg >= 0:
+                m3 = m1 / m2
                 quot.append(m3)
-                max_deg = max(self_p, key=lambda mono: mono.deg).deg
-                self_p = (self_p - other_p * m3).reorder(reverse=True, with_null_coefs=True, max_deg=max_deg)
-                self_p.pop(0)
-                if not self_p.monomials:
-                    break
-                m1 = self_p[0]
-                if m1.deg - m2.deg < 0:
-                    break
-            if self_p == 0:
+                max_deg = max(self_copy, key=lambda mono: mono.deg).deg
+                self_copy = (self_copy - other_copy * m3).reorder(reverse=True, with_null_coefs=True, max_deg=max_deg)
+                self_copy.pop(0)
+                m1 = self_copy[0]
+
+            if self_copy == 0:
                 return quot.reorder()
-            return quot.reorder(), self_p.reorder()
+            return quot.reorder(), self_copy.reorder()
 
     def __floordiv__(self, other: Any):
         quotient, _ = self / other
@@ -532,15 +519,8 @@ if __name__ == "__main__":
     p1 = Polynomial("-X+2X^2+X^3-2+0x^5+0+0+0")
     w = Polynomial.str_pol("X^3+2X^2-2-X")
     p2 = Polynomial("X^2+1")
-    #    for m in w:
-    #        if m == w[-1]:
-    #            print(m)
-    #        else:
-    #            print(m, end=', ')
     print(*p1, p1.deg(), sep=', ')
     print(*p1.reorder(), sep=', ')
-    # print()
-    # m=p1.pop()
     print(p1, w, p1 == w)
     m = Monomial(1, 3)
     print("Testing the addition")
@@ -557,7 +537,6 @@ if __name__ == "__main__":
 
     t = Polynomial((m, '-x^6 -7', '7/3x', p2, '', '', '', ''))
     g = (Polynomial(-1) + 'x+2') * 'x+2'
-    # t = Polynomial(['',''])
     print(isinstance(Monomial('5/6').coef, Fraction))
     print(t, len(t), 'and', t.reorder(), len(t.reorder()))
     m = Monomial(0, 10)
