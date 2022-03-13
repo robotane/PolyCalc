@@ -1,19 +1,25 @@
-#! /usr/bin/env python3
-# -*- coding:Utf8 -*-
+# (C) John Robotane 2019-2022
+# Created on 5/12/2019 2:50 PM
 
-# (C) John Robotane 5/12/2019 2:50 PM
 from fractions import Fraction
 import re
+from typing import Any
 
 
-class Monomial(object):
+class Monomial:
     """Represent a monomial.
 
     A monomial has a coefficient and a degree
     The default value of the degree is 0, but you should provide
-    at least a coefficient in anny numeric format, it will be converted
+    at least a coefficient in any numeric format, it will be converted
     to a fractions.Fraction type.
     """
+
+    def __mod__(self, other: Any) -> Any:
+        pass
+
+    def __rmod__(self, other: Any) -> Any:
+        pass
 
     def __init__(self, coef, deg=0):
         """Create a monomial
@@ -22,59 +28,100 @@ class Monomial(object):
         :param deg: The degree of the monomial, with a default value of 0
         :type deg: int
         """
-        coef = Fraction(coef).limit_denominator(1000000)
-        self.coef = coef
-        self.deg = deg
+        if isinstance(coef, Monomial):
+            self.coef = coef.coef
+            self.deg = coef.deg
+        else:
+            self.coef = Fraction(coef).limit_denominator(1000000)
+            self.deg = int(deg)
         self.var = "x"
 
     def __repr__(self):
         return "Monomial({},{})".format(self.coef, self.deg)
 
-    def __eq__(self, mon):
-        return self.coef == mon.coef and self.deg == mon.deg
+    def __eq__(self, other: Any):
+        if isinstance(other, (int, float, Fraction)):
+            other = Monomial(other)
+        if not isinstance(other, Monomial):
+            return False
+        return self.coef == other.coef and self.deg == other.deg
 
     def __bool__(self):
-        return self is not None
+        return bool(self.coef)
 
     def __neg__(self):
         return Monomial(-self.coef, self.deg)
 
-    def __mul__(self, m):
-        return Monomial(self.coef * m.coef, self.deg + m.deg)
+    def __mul__(self, other: Any):
+        if isinstance(other, (int, float, Fraction)):
+            other = Monomial(other)
+        if not isinstance(other, (Monomial, Polynomial)):
+            raise ValueError("Cannot add monomial to...")  # TODO: Find a best Error message
+        if isinstance(other, Polynomial):
+            return other * self
+        return Monomial(self.coef * other.coef, self.deg + other.deg)
+
+    def __rmul__(self, other: Any) -> Any:
+        return self.__mul__(other)
+
+    def __add__(self, other: Any) -> Any:
+        if isinstance(other, (int, float, Fraction)):
+            other = Monomial(other)
+        if not isinstance(other, (Monomial, Polynomial)):
+            raise ValueError("Cannot add monomial to...")  # TODO: Find a best Error message
+        if isinstance(other, Polynomial):
+            return other + self
+        if other.deg == self.deg:
+            return Monomial(self.coef + other.coef, self.deg)
+        else:
+            return Polynomial((self, other))
+
+    def __radd__(self, other: Any) -> Any:
+        return self.__add__(other)
+
+    def __truediv__(self, other: Any) -> Any:
+        if isinstance(other, (int, float, Fraction)):
+            other = Monomial(other)
+        if not isinstance(other, Monomial):
+            raise ValueError("Cannot add monomial to...")  # TODO: Find a best Error message
+        return Monomial(self.coef / other.coef, self.deg - other.deg)
+
+    def __pow__(self, exponent: Any) -> Any:
+        return Monomial(self.coef, self.deg * exponent)
 
     def __str__(self):
         """
 
         :return: A human readable string of the monomial
         """
-        s = ""
+        string = ""
         if self.deg == 0:
             return str(self.coef)
 
         if self.coef == 1 or self.coef == -1:
             if self.coef == -1:
-                s += "-"
-            s += self.var
+                string += "-"
+            string += self.var
         else:
-            s += str(self.coef) + self.var
+            string += str(self.coef) + self.var
         if self.deg > 1:
-            s += "^" + str(self.deg)
-        return s if s else '0'
+            string += "^" + str(self.deg)
+        return string if string else '0'
 
     def html_str(self):
-        s = ""
+        string = ""
         if self.deg == 0:
             return str(self.coef)
 
         if self.coef == 1 or self.coef == -1:
             if self.coef == -1:
-                s += "-"
-            s += self.var
+                string += "-"
+            string += self.var
         else:
-            s += str(self.coef) + self.var
+            string += str(self.coef) + self.var
         if self.deg > 1:
-            s += "<sup>" + str(self.deg) + "</sup>"
-        return s
+            string += "<sup>" + str(self.deg) + "</sup>"
+        return string
 
     def eval_str(self, val):
         """Used to get an evaluable string of the monomial.
@@ -85,39 +132,39 @@ class Monomial(object):
         :return: an evaluable string of the monomial which can be used with eval()
         :rtype: str
         """
-        s = ""
+        string = ""
         val = Fraction(val).limit_denominator(1000000)
         if self.deg == 0:
             return repr(self.coef)
 
         if self.coef == 1 or self.coef == -1:
             if self.coef == -1:
-                s += "-"
-            s += repr(val)
+                string += "-"
+            string += repr(val)
         else:
-            # s += repr(self.coef) if self.coef > 0 else ("-"+repr(-self.coef)) + "*(" + repr(val) + ")"
-            s += repr(self.coef) + "*" + repr(val) + ""
+            string += repr(self.coef) + "*" + repr(val) + ""
 
         if self.deg > 1:
-            s += "**" + str(self.deg)
-        return s
+            string += "**" + str(self.deg)
+        return string
 
-    def __call__(self, val):
+    def __call__(self, val: Any):
         val = Fraction(val).limit_denominator(1000000)
         return self.coef * (val ** self.deg)
 
-    def derive(self, n):
+    def derive(self, n: int):
         """Derive the monomial
 
         :param n: The number of time the monomial will be derived
+        :type n: int
         :return: The n-th derivative of the monomial
         :rtype: Monomial
         """
-        m = Monomial(self.deg * self.coef, self.deg - 1)
+        mono = Monomial(self.deg * self.coef, self.deg - 1)
         if n == 1:
-            return m
+            return mono
         else:
-            return m.derive(n - 1)
+            return mono.derive(n - 1)
 
 
 class Polynomial:
@@ -129,13 +176,13 @@ class Polynomial:
     -----
 
     >>> import polynomials
-    >>> p = polynomials.Polynomial("X^4+1/3X^3")
-    >>> q = polynomials.Polynomial("X^2+5/2X+1")
-    >>> quot , rem = p/q
-    >>> print(f"({p})/({q})={quot} and the remainder is {rem}")
-    (X^4+1/3X^3)/(X^2+5/2X+1)=X^2-13/6X+53/12 and the remainder is -71/8X-53/12
+    >>> p = polynomials.Polynomial("x^4+1/3x^3")
+    >>> q = polynomials.Polynomial("x^2+5/2x+1")
+    >>> quot , rest = p/q
+    >>> print(f"({p})/({q})={quot} and the remainder is {rest}")
+    (x^4+1/3x^3)/(x^2+5/2x+1)=x^2-13/6x+53/12 and the remainder is -71/8x-53/12
     >>> print(p.derive())
-    4X^3+3X^2
+    4x^3+x^2
     >>> print(p(2/3))
     8/27
     """
@@ -153,11 +200,8 @@ class Polynomial:
             self.append(Monomial(0))
         elif isinstance(expr, (list, tuple)):
             for val in expr:
-                # if val:
                 self.append(Polynomial(val))
-        elif isinstance(expr, Monomial):
-            self.append(expr)
-        elif isinstance(expr, Polynomial):
+        elif isinstance(expr, (Monomial, Polynomial)):
             self.append(expr)
         elif isinstance(expr, str):
             self.append(self.str_pol(expr))
@@ -173,46 +217,43 @@ class Polynomial:
         :return: The highest degree within the non null monomials of the polynomial
         :rtype: int
         """
-        return max(filter(lambda m: m.coef != 0, self), key=lambda m: m.deg).deg
+        return max(filter(lambda mono: mono.coef != 0, self), default=Monomial(0), key=lambda mono: mono.deg).deg
 
-    def append(self, f, c=None):
+    def append(self, other, degree=None):
         """
         Add a monomial to the polynomial
 
-        :param f: Any numeric value or a Monomial or any Plynomial
-        :param c: Degree of the monomial
-        :type c: int
+        :param other: Any numeric value or a Monomial or any Polynomial
+        :param degree: Degree of the monomial
+        :type degree: int
         :return: None
         """
         # self.monomials.append(f if c is None else Monomial(f, c))
 
         # TODO Never append the monomial null Monomial(0) twice.
 
-        if c is None:
-            if isinstance(f, Monomial):
-                self.monomials.append(f)
-            elif isinstance(f, Polynomial):
-                for m in f:
-                    m.var = self.var
-                    self.append(m)
+        if degree is None:
+            if isinstance(other, Monomial):
+                self.monomials.append(other)
+            elif isinstance(other, Polynomial):
+                self.monomials.extend(other)
             else:
-                self.append(Polynomial(f))
+                self.append(Polynomial(other))
         else:
-            m = Monomial(f, c)
-            m.var = self.var
-            self.append(m)
-        # self.reorder()
+            mono = Monomial(other, degree)
+            mono.var = self.var
+            self.append(mono)
 
-    def pol_append(self, p):
+    def pol_append(self, other):
         """
         Add the polynomial p monomials to the the current polynomial monomials
 
-        :param p: The polynomial to pol_append
-        :type p: Polynomial
+        :param other: The polynomial to pol_append
+        :type other: Polynomial
         :return: None
         """
-        for m in p:
-            self.append(m)
+        for mono in other:
+            self.append(mono)
 
     def __repr__(self):
         return f'Polynomial("{self!s}")'
@@ -222,29 +263,29 @@ class Polynomial:
 
         :return: A human readable string of the monomial
         """
-        s = ""
-        for m in self:
-            if not m.coef == 0:
-                if m.coef > 0:
-                    s += "+"
-                s += str(m)
-        # s = s.replace("", self.var)
-        if s.startswith("+"):
-            s = s[1:]
-        return s if s else "0"
+        string = ""
+        for mono in self:
+            if not mono.coef == 0:
+                if mono.coef > 0:
+                    string += "+"
+                string += str(mono)
+        # string = string.replace("", self.var)
+        if string.startswith("+"):
+            string = string[1:]
+        return string if string else "0"
 
     def html_str(self):
-        s = ""
-        for m in self:
-            if not m.coef == 0:
-                if not m == self[0]:
-                    if m.coef > 0:
-                        s += "+"
-                s += m.html_str()
-        # s = s.replace(self.var, self.var)
-        if s.startswith("+"):
-            s = s[1:]
-        return s if s else "0"
+        string = ""
+        for mono in self:
+            if not mono.coef == 0:
+                if not mono == self[0]:
+                    if mono.coef > 0:
+                        string += "+"
+                string += mono.html_str()
+        # string = string.replace(self.var, self.var)
+        if string.startswith("+"):
+            string = string[1:]
+        return string if string else "0"
 
     def eval_str(self, val):
         """Used to get an evaluable string of the polynomial.
@@ -255,14 +296,14 @@ class Polynomial:
         :return: An evaluable string of the polynomial which can be used with eval()
         :rtype: str
         """
-        s = ""
-        for m in self:
-            if not m.coef == 0:
-                # if not m == self.monomials[0] and m.coef > 0:
-                s += "+"
-                s += m.eval_str(val)
+        string = ""
+        for mono in self:
+            if not mono.coef == 0:
+                # if not mono == self.monomials[0] and mono.coef > 0:
+                string += "+"
+                string += mono.eval_str(val)
 
-        return s[1:]
+        return string[1:]
 
     def __iter__(self):
         return iter(self.monomials)
@@ -282,8 +323,12 @@ class Polynomial:
     def __len__(self):
         return len(self.monomials)
 
-    def __contains__(self, mon):
-        return mon in self.monomials
+    def __contains__(self, monomial: Any):
+        if isinstance(monomial, (int, float, Fraction)):
+            monomial = Monomial(monomial)
+        if not isinstance(monomial, Monomial):
+            return False
+        return monomial in self.monomials
 
     def copy(self):
         """
@@ -292,271 +337,229 @@ class Polynomial:
         :return: A copy of the polynomial
         :rtype: Polynomial
         """
-        # p = Polynomial()
         return Polynomial(self.monomials.copy())
 
-    def __eq__(self, p):
-        if not isinstance(p, Polynomial):
-            p = Polynomial(p)
-        s = self.reorder(with_zero=True)
-        p = p.reorder(with_zero=True)
-        if len(p) != len(s) or p.deg() != s.deg():
+    def __eq__(self, other: Any):
+        if not isinstance(other, (Monomial, Polynomial, int, float, Fraction, str)):
             return False
-        return all([s[i] == p[i] for i in range(s.deg() + 1)])
+        if not isinstance(other, Polynomial):
+            other = Polynomial(other)
+        reordered_self = self.reorder(with_null_coefs=True)
+        other = other.reorder(with_null_coefs=True)
+        if len(other) != len(reordered_self) or other.deg() != reordered_self.deg():
+            return False
+        return all([reordered_self[i] == other[i] for i in range(len(reordered_self))])
 
-    def __add__(self, p):
-        s = self.copy()
-        # s.monomials = self.monomials.copy()
-        if not isinstance(p, (Polynomial, Monomial)):
-            p = Polynomial(p)
-        s.append(p)
-        return s.reorder()
+    def __add__(self, other: Any):
+        self_copy = self.copy()
+        self_copy.append(other)
+        return self_copy.reorder()
 
-    def __sub__(self, p):
-        if not isinstance(p, Polynomial):
-            p = Polynomial(p)
-        return self.__add__(-p)
+    def __sub__(self, other: Any):
+        if not isinstance(other, Polynomial):
+            other = Polynomial(other)
+        return self.__add__(-other)
 
     def __neg__(self):
-        # p = Polynomial()
-        p = Polynomial([-m for m in self])
-        return p.reorder()
+        return Polynomial([-mono for mono in self])
 
-    def __truediv__(self, p):
-        if str(p).isalnum():
-            p = Monomial(p)
-            return self * Monomial(Fraction(p.coef.denominator, p.coef.numerator))
+    def __truediv__(self, other: Any):
+        if isinstance(other, (int, float, Fraction)):
+            other = Fraction(other)
+            return self * Monomial(1 / other)
 
-        if not isinstance(p, Polynomial):
-            p = Polynomial(p)
+        if not isinstance(other, Polynomial):
+            other = Polynomial(other)
 
-        if self.deg() < p.deg():
+        if self.deg() < other.deg():
             return Polynomial(0), self
 
         else:
-            p1 = self.copy().reorder(with_zero=True)
-            p2 = p.copy().reorder()
+            self_p = self.copy().reorder(with_null_coefs=True)
+            other_p = other.copy().reorder()
             quot = Polynomial()
-            m1, m2 = p1[0], p2[0]
+            m1, m2 = self_p[0], other_p[0]
 
             while True:
-                m = Monomial(m1.coef / m2.coef, m1.deg - m2.deg)
-                quot.append(m)
-                p1 = (p1 - p2 * m).reorder(with_zero=True, deg=p1.deg())
-                p1.pop(0)
-                if not p1.monomials:
+                m3 = Monomial(m1.coef / m2.coef, m1.deg - m2.deg)
+                quot.append(m3)
+                max_deg = max(self_p, key=lambda mono: mono.deg).deg
+                self_p = (self_p - other_p * m3).reorder(reverse=True, with_null_coefs=True, max_deg=max_deg)
+                self_p.pop(0)
+                if not self_p.monomials:
                     break
-                m1 = p1[0]
+                m1 = self_p[0]
                 if m1.deg - m2.deg < 0:
                     break
-            return quot.reorder(), p1.reorder()
+            if self_p == 0:
+                return quot.reorder()
+            return quot.reorder(), self_p.reorder()
 
-    def __floordiv__(self, p):
-        q, _ = self / p
-        return q
+    def __floordiv__(self, other: Any):
+        quotient, _ = self / other
+        return quotient
 
-    def __mul__(self, f):
-        if not isinstance(f, (Polynomial, Monomial)):
-            f = Polynomial(f)
+    def __mul__(self, other: Any):
+        if not isinstance(other, (Polynomial, Monomial)):
+            other = Polynomial(other)
 
-        if isinstance(f, Monomial):
-            q = Polynomial()
-            for m in self:
-                q.append(f * m)
+        if isinstance(other, Monomial):
+            poly = Polynomial()
+            for mono in self:
+                poly.append(other * mono)
+            return poly.reorder()
 
-            return q.reorder()
+        if isinstance(other, Polynomial):
+            poly = Polynomial()
+            for mono in other:
+                poly.append(self * mono)
+            return poly.reorder()
 
-        if isinstance(f, Polynomial):
-            q = Polynomial()
-            for m in f:
-                q.append(self * m)
+    def __rmul__(self, other: Any):
+        return self.__mul__(other)
 
-            return q.reorder()
+    def __radd__(self, other: Any):
+        return self.__add__(other)
 
-    def __rmul__(self, f):
-        return self.__mul__(f)
+    def __rsub__(self, other: Any):
+        return self.__sub__(other)
 
-    def __radd__(self, f):
-        return self.__add__(f)
-
-    def __rsub__(self, f):
-        return self.__sub__(f)
-
-    def __pow__(self, n):
+    def __pow__(self, exponent: int):
         pow_pol = Polynomial(1)
-        for i in range(n):
+        for i in range(exponent):
             pow_pol = pow_pol * self
         return pow_pol.reorder()
 
-    def __mod__(self, other):
-        _, r = self / other
-        return r
+    def __bool__(self):
+        return bool(self.monomials)
 
-    def __call__(self, val=Fraction(0)):
+    def __mod__(self, other):
+        _, rest = self / other
+        return rest
+
+    def __call__(self, val: Any = Fraction(0)):
         if str(val).isalpha():
-            p = self.copy()
-            p.var = val
-            return p
-        return sum(map(lambda m: m(val), self))
+            poly = self.copy()
+            poly.var = val
+            return poly
+        return sum(map(lambda mono: mono(val), self))
 
     def derive(self, n=1):
         """Derive the polynomial
 
-        :param n: The number of time the polynomial will be derivated
+        :param n: The number of time the polynomial will be derived
         :return: The n-th derivative of the monomial
         :rtype: Polynomial
         """
-        p = Polynomial()
-        for m in self:
-            p.append(m.derive(n))
-        return p.reorder()
+        poly = Polynomial()
+        for mono in self:
+            poly.append(mono.derive(n))
+        return poly.reorder()
 
-    def reorder(self, rev=True, with_zero=False, deg=None):
+    # TODO: Separate 'reduce' and 'order' so that reduce will just add Monomial with same degree together and order will
+    #  order monomials
+    def reorder(self, reverse=True, with_null_coefs=False, max_deg=None):
         """Reorder the polynomial in order to have increasing or decreasing degrees of the monomials
 
-        :param rev: If True, the first monomial will be the monomial wit hhighest degree else it will be the opposite, the first monomial will be the monomial with the lowest degree
-        :type rev: bool
-        :param with_zero: If False, the returned polynomial will not contain monomials with null coefficients, else the opposite will hapen.
-        :type with_zero: bool
-        :param deg: The highest degree, this parameter is used essentially in the __truediv__ method
-        :type deg: int
+        :param reverse: If True, the first monomial will be the monomial with the highest degree else it will be the
+                        opposite, the first monomial will be the monomial with the lowest degree
+        :type reverse: bool
+        :param with_null_coefs: If False, the returned polynomial will not contain monomials with null coefficients.
+        :type with_null_coefs: bool
+        :param max_deg: The highest degree. The polynomial will be truncated and only monomial which degree are less or
+                        equal to max_max_deg will be kept.
+        :type max_deg: int
         :return: A polynomial with reordered monomial
         :rtype: Polynomial
         """
-        s = []
-        r = range(self.deg() if deg is None else deg + 1)
-        if rev:
-            r = range(self.deg() if deg is None else deg, -1, -1)
-        for i in r:
-            m_l = [m for m in self if m.deg == i]
+        monomials_list = []
+        rg = range(self.deg() if max_deg is None else max_deg + 1)
+        if reverse:
+            rg = range(self.deg() if max_deg is None else max_deg, -1, -1)
+        for i in rg:
+            m_l = [mono for mono in self if mono.deg == i]
 
-            if m_l:
-                c = Fraction(0)
-                for m in m_l:
-                    c = c + m.coef
-                if with_zero or (c != Fraction(0)):
-                    s.append(Monomial(c, i))
-            elif with_zero:
-                s.append(Monomial(0, i))
+            mono = Monomial(0, i)
+            for mon in m_l:
+                mono = mono + mon
+            if with_null_coefs or (mono != 0):
+                monomials_list.append(mono)
 
-        # self.monomials = s
-        # p = Polynomial()
-        return Polynomial(s)
-        # print(with_zero)
-        # return p
+        if max_deg is not None:
+            return Polynomial(monomials_list)
+
+        # trimming unnecessary null monomials
+        stop = len(monomials_list)
+        if reverse:
+            monomials_list.reverse()
+        for i in range(stop + 1):
+            if not any(monomials_list[i:stop]):
+                monomials_list = monomials_list[0:i]
+                break
+        if reverse:
+            monomials_list.reverse()
+        return Polynomial(monomials_list)
 
     @staticmethod
-    def str_pol(s):
-        """Take a polynomial expression a string and return the corresponding polynomial
+    def str_pol(expression):
+        """Take a polynomial expression as a string and return the corresponding polynomial Object
 
-        :param s: The polynomial expression
-        :type s: str
+        :param expression: The polynomial expression
+        :type expression: str
         :return: A polynomial which monomials are those in the expression
         :rtype: Polynomial
         """
-        p = []
-        # p.pop(0)
-        s = s.replace(" ", "")
-        mon = re.compile(r"(?P<coef>[+-]?[\d]*[./]?[\d]*)(?P<var>[Xx]?)[\^]?(?P<deg>[\d]*)")
-        for monome in mon.finditer(s):
-            coef = Fraction(0)
-            deg = 0
-            t = monome.group('coef')
-            mono = t + '1' if t in ('+', '-') else t if t else '1'
-            # print(monome.groupdict())
-            if monome.group('var'):
+        monomials_list = []
+        expression = expression.replace(" ", "")
+        mono_regex = re.compile(r"(?P<coef>[+-]?[\d]*[./]?[\d]*)(?P<var>[Xx]?)[\^]?(?P<deg>[\d]*)")
+        for mon in mono_regex.finditer(expression):
+            mono_coef_string = mon.group('coef')
+            mono = mono_coef_string + '1' if mono_coef_string in ('+', '-') else mono_coef_string \
+                if mono_coef_string else '1'
+            if mon.group('var'):
                 coef = Fraction(mono)
-                deg = int(monome.group('deg')) if monome.group('deg') else 1
-                p.append(Monomial(coef, deg))
-            elif monome.group('coef'):
+                deg = int(mon.group('deg')) if mon.group('deg') else 1
+                monomials_list.append(Monomial(coef, deg))
+            elif mon.group('coef'):
                 coef = Fraction(mono)
                 deg = 0
-                p.append(Monomial(coef, deg))
-        return Polynomial(p)
-
-    @staticmethod
-    def str_pol_old(s):
-        """Take a polynomial expression a string and return the corresponding polynomial
-
-        :param s: The polynomial expression
-        :type s: str
-        :return: A polynomial which monomials are those in the expression
-        :rtype: Polynomial
-        """
-        p = Polynomial()
-        p.monomials.pop(0)
-        scoef, sdeg = "", ""
-        pc, pd = False, False
-        pcoef, pdeg = Fraction(0), Fraction(0)
-        neg = s[0] == "-"
-        l = len(s)
-
-        for i, c in enumerate(s):
-            if c.upper() == p.var:
-                pc = True
-            if c == "^":
-                pd = True
-            if (c.isdigit() or c == "." or c == "/") and not pc:
-                scoef += c
-            if c.isdigit() and pd:
-                sdeg += c
-            if (c == "+" or c == "-" or i == l - 1) and i > 0:
-                if not scoef:
-                    if neg:
-                        pcoef = Fraction(-1)
-                    else:
-                        pcoef = Fraction(1)
-                else:
-                    pcoef = Fraction(scoef).limit_denominator(1000000)
-                    if neg:
-                        pcoef = -pcoef
-
-                if pc and not pd:
-                    pdeg = 1
-                elif pc and pd:
-                    pdeg = int(sdeg)
-                if not pc:
-                    pdeg = 0
-                p.append(pcoef, pdeg)
-                scoef, sdeg = "", ""
-                pc, pd = False, False
-                pcoef, pdeg = Fraction(0), Fraction(0)
-                neg = c == "-"
-        return p
+                monomials_list.append(Monomial(coef, deg))
+        return Polynomial(monomials_list)
 
 
 if __name__ == "__main__":
     z = Polynomial('X-2X^3+3/8')
-    p = Polynomial("-X+2X^2+X^3-2")
-    w = Polynomial.str_pol_old("X^3+2X^2-2-X")
-    q = Polynomial("X^2+1")
+    p1 = Polynomial("-X+2X^2+X^3-2+0x^5+0+0+0")
+    w = Polynomial.str_pol("X^3+2X^2-2-X")
+    p2 = Polynomial("X^2+1")
     #    for m in w:
     #        if m == w[-1]:
     #            print(m)
     #        else:
     #            print(m, end=', ')
-    print(*p, sep=', ')
+    print(*p1, p1.deg(), sep=', ')
+    print(*p1.reorder(), sep=', ')
     # print()
-    # m=p.pop()
-    print(p, w, p == w)
+    # m=p1.pop()
+    print(p1, w, p1 == w)
     m = Monomial(1, 3)
     print("Testing the addition")
-    print(f"({p})+({q})={p + q}")
+    print(f"({p1})+({p2})={p1 + p2}")
     print("Testing the multiplication")
-    print(f"({p})*({q})={p * q}")
+    print(f"({p1})*({p2})={p1 * p2}")
     print("Testing the division")
-    qot, rem = p // q
-    print(f"({p})/({q})={qot} and the remainder is {rem}")
+    qot, rem = p1 / p2
+    print(f"({p1})/({p2})={qot} and the remainder is {rem}")
     print("Testing derive once")
-    print(f"{p}(2/3)={p(2 / 3)}")
+    print(f"{p1}(2/3)={p1(2 / 3)}")
     print("Testing derive twice")
-    print(f"({p * q})''={(p * q).derive(2)}")
+    print(f"({p1 * p2})''={(p1 * p2).derive(2)}")
 
-    t = Polynomial((m, '-x^6 -7', '7/3x', q, '', '', '', ''))
+    t = Polynomial((m, '-x^6 -7', '7/3x', p2, '', '', '', ''))
     g = (Polynomial(-1) + 'x+2') * 'x+2'
     # t = Polynomial(['',''])
     print(isinstance(Monomial('5/6').coef, Fraction))
     print(t, len(t), 'and', t.reorder(), len(t.reorder()))
     m = Monomial(0, 10)
-    p = Polynomial((m, 'x', '2x^2'))
-    print(p, p.deg())
+    p1 = Polynomial((m, 'x', '2x^2')).reorder()
+    print(p1, p1.deg(), len(p1))
