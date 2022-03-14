@@ -1,6 +1,6 @@
 import unittest
 
-from polynomials import Polynomial, Monomial
+from polynomials import Polynomial, Monomial, ModuloPolynomial
 
 
 class MonomialTestCase(unittest.TestCase):
@@ -67,6 +67,27 @@ class PolynomialTestCase(unittest.TestCase):
         self.assertEqual(0, Polynomial(0))
         self.assertEqual(0, Polynomial((Monomial(0, 0), Monomial(0, 0))))
         self.assertEqual(0, Polynomial((Monomial(-1, 4), Monomial(1, 4))))
+
+
+class ModuloPolynomialTestCase(unittest.TestCase):
+    def setUp(self) -> None:
+        self.p = Polynomial("x+1")
+        self.q = Polynomial("x+4")
+
+    def test_addition(self):
+        p1 = ModuloPolynomial("x+1")
+        p2 = ModuloPolynomial("x+4")
+        p3 = ModuloPolynomial("7x-6")
+        s = ModuloPolynomial("2x")
+        self.assertEqual(s, p1 + p2)
+        self.assertEqual(ModuloPolynomial("3x+3"), p2 + p3)
+        self.assertIsInstance(-p2-p3, ModuloPolynomial)
+
+    def test_equality(self):
+        self.assertEqual(0, ModuloPolynomial(0))
+        self.assertEqual(ModuloPolynomial(0, 4), ModuloPolynomial(0, 6))
+        self.assertEqual(ModuloPolynomial(0), ModuloPolynomial((Monomial(0, 0), Monomial(0, 0))))
+        self.assertEqual(ModuloPolynomial(0), ModuloPolynomial((Monomial(4, 4), Monomial(1, 4))))
 
 
 if __name__ == '__main__':

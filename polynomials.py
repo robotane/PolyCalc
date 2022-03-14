@@ -346,17 +346,15 @@ class Polynomial:
         return self_copy.reorder()
 
     def __sub__(self, other: Any):
-        if not isinstance(other, Polynomial):
-            other = Polynomial(other)
-        return self.__add__(-other)
+        return self.__neg__().__add__(other).__neg__()
 
     def __neg__(self):
         return Polynomial([-mono for mono in self])
 
     def __truediv__(self, other: Any):
         if isinstance(other, (int, float, Fraction)):
-            other = Fraction(other)
-            return self * Monomial(1 / other)
+            other = Monomial(other)
+            return self * Monomial(1 / other.coef)
 
         if not isinstance(other, Polynomial):
             other = Polynomial(other)
@@ -512,6 +510,71 @@ class Polynomial:
                 deg = 0
                 monomials_list.append(Monomial(coef, deg))
         return Polynomial(monomials_list)
+
+
+class ModuloPolynomial(Polynomial):
+
+    def __init__(self, expr, mod=5):
+        super().__init__(expr)
+        self.mod = mod
+        # TODO: Monomials coefficients should be integers, not full fractions or floats
+        self.__module_monomials()
+
+    def __module_monomials(self):
+        def mon_to_mod(mon, mod):
+            mon.coef = mon.coef % mod
+            return mon
+
+        self.monomials = list(map(lambda mon: mon_to_mod(mon, self.mod), self.monomials))
+
+    def reorder(self, reverse=True, with_null_coefs=False, max_deg=None):
+        return ModuloPolynomial(super().reorder(reverse, with_null_coefs, max_deg), self.mod)
+
+    def __repr__(self):
+        pol_str = super(ModuloPolynomial, self).__repr__()
+        return f"Modulo{pol_str[:-1]}, mod={self.mod})"
+
+    def __neg__(self):
+        return ModuloPolynomial(super(ModuloPolynomial, self).__neg__(), self.mod)
+
+    def __eq__(self, other):
+        if not isinstance(other, ModuloPolynomial):
+            if isinstance(other, int):
+                if other == 0:
+                    s_o = self.reorder()
+                    return len(s_o) == 1 and s_o[0] == 0
+            return False
+        if self.mod != other.mod:
+            s_o, o_o = self.reorder(), other.reorder()
+            return len(s_o) == len(o_o) == 1 and s_o[0] == o_o[0] == 0
+        return super(ModuloPolynomial, self).__eq__(other.reorder().to_polynomial())
+
+    def __mul__(self, other):
+        if isinstance(other, (ModuloPolynomial, int)):
+            if isinstance(other, int):
+                return ModuloPolynomial(super(ModuloPolynomial, self).__mul__(other), self.mod).reorder()
+            if other.mod == self.mod:
+                res = super(ModuloPolynomial, self).__mul__(other.to_polynomial())
+                return self.pol_mod_pol(res, self.mod).reorder()
+            else:
+                raise ValueError(f"The Polynomials modulos values don't match: {self.mod}!={other.mod}")
+        raise ValueError(f"Cannot multiply {self.__class__.__name__} with objects of type {other.__class__.__name__}")
+
+    def __add__(self, other: Any):
+        if isinstance(other, ModuloPolynomial):
+            if other.mod == self.mod:
+                res = super(ModuloPolynomial, self).__add__(other.to_polynomial())
+                return self.pol_mod_pol(res, self.mod).reorder()
+            else:
+                raise ValueError(f"The Polynomials modulos values don't match: {self.mod}!={other.mod}")
+        raise ValueError(f"Cannot add {self.__class__.__name__} to objects of type {other.__class__.__name__}")
+
+    @staticmethod
+    def pol_mod_pol(pol: Polynomial, mod=5):
+        return ModuloPolynomial(pol.monomials, mod)
+
+    def to_polynomial(self):
+        return Polynomial(self.monomials)
 
 
 if __name__ == "__main__":
