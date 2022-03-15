@@ -77,7 +77,7 @@ class ModuloPolynomialTestCase(unittest.TestCase):
     def test_addition(self):
         p1 = ModuloPolynomial("x+1")
         p2 = ModuloPolynomial("x+4")
-        p3 = ModuloPolynomial("7x-6")
+        p3 = ModuloPolynomial("7x-6+5x^3-15")
         s = ModuloPolynomial("2x")
         self.assertEqual(s, p1 + p2)
         self.assertEqual(ModuloPolynomial("3x+3"), p2 + p3)
@@ -88,6 +88,9 @@ class ModuloPolynomialTestCase(unittest.TestCase):
         self.assertEqual(ModuloPolynomial(0, 4), ModuloPolynomial(0, 6))
         self.assertEqual(ModuloPolynomial(0), ModuloPolynomial((Monomial(0, 0), Monomial(0, 0))))
         self.assertEqual(ModuloPolynomial(0), ModuloPolynomial((Monomial(4, 4), Monomial(1, 4))))
+        reorder = ModuloPolynomial((Monomial(4, 4), Monomial(1, 4))).reorder()
+        print(*reorder)
+        self.assertEqual(1, len(reorder))
 
 
 if __name__ == '__main__':
