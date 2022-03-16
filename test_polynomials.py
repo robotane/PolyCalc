@@ -1,6 +1,6 @@
 import unittest
 
-from polynomials import Polynomial, Monomial, ModuloPolynomial
+from polynomials import Polynomial, Monomial, ModuloPolynomial, RationalPolynomial
 
 
 class MonomialTestCase(unittest.TestCase):
@@ -91,6 +91,13 @@ class ModuloPolynomialTestCase(unittest.TestCase):
         reorder = ModuloPolynomial((Monomial(4, 4), Monomial(1, 4))).reorder()
         print(*reorder)
         self.assertEqual(1, len(reorder))
+
+
+class RationalPolynomialTestCase(unittest.TestCase):
+    def test_addition(self):
+        rp = RationalPolynomial("x+1/4", "x+2")
+        rq = RationalPolynomial("x+4", "x-2")
+        self.assertEqual(RationalPolynomial("2x^2+17/4x+15/2", "x^2-4"), rq + rp)
 
 
 if __name__ == '__main__':
