@@ -1,8 +1,7 @@
-from fractions import Fraction
 from typing import Any
 
-import polynomials.Polynomial
 import polynomials.Monomial
+import polynomials.Polynomial
 
 
 class ModuloPolynomial(polynomials.Polynomial):
@@ -28,8 +27,7 @@ class ModuloPolynomial(polynomials.Polynomial):
         return ModuloPolynomial(mono_list, self.mod)
 
     def __repr__(self):
-        pol_str = super(ModuloPolynomial, self).__repr__()
-        return f"Modulo{pol_str[:-1]}, mod={self.mod})"
+        return f'{self.__class__.__name__}("{super().__str__()}", mod={self.mod})'
 
     def __neg__(self):
         return ModuloPolynomial(super(ModuloPolynomial, self).__neg__(), self.mod)

@@ -52,7 +52,11 @@ class Polynomial:
         :return: The highest degree within the non null monomials of the polynomial
         :rtype: int
         """
-        return max(filter(lambda mono: mono.coef != 0, self), default=Monomial.Monomial(0), key=lambda mono: mono.deg).deg
+        return max(
+            filter(lambda mono: mono.coef != 0, self),
+            default=Monomial.Monomial(0),
+            key=lambda mono: mono.deg
+        ).deg
 
     def append(self, other, degree=None):
         """
@@ -76,7 +80,7 @@ class Polynomial:
             self.append(mono)
 
     def __repr__(self):
-        return f'Polynomial("{self!s}")'
+        return f'{self.__class__.__name__}("{self!s}")'
 
     def __str__(self):
         """

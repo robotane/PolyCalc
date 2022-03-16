@@ -29,7 +29,7 @@ class Monomial:
         self.var = "x"
 
     def __repr__(self):
-        return "Monomial({},{})".format(self.coef, self.deg)
+        return f"{self.__class__.__name__}({self.coef}, {self.deg})"
 
     def __eq__(self, other: Any):
         if isinstance(other, (int, float, Fraction)):
