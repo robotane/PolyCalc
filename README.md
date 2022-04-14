@@ -14,8 +14,16 @@ monômes (coefficient + degré), avec les opérations arithmétiques usuelles
 - `ModuloPolynomial.py` — variante où les coefficients sont réduits modulo `n`
 - `RationalPolynomial.py` — variante à coefficients rationnels
 
-`modulo.py` fournit l'arithmétique modulaire (classe `NZ`) utilisée par
-`ModuloPolynomial`.
+`polynomials_examples.py` illustre l'API du module (construction, réordonnancement,
+arithmétique) et `test_polynomials.py` en contient les tests.
+
+### Version antérieure : `modulo.py` / `polynomial_mod.py`
+
+Un premier prototype (classe `Monome`, noms en français), antérieur au package
+`polynomials/` actuel : `modulo.py` fournit l'arithmétique modulaire (classe
+`NZ`), utilisée par la classe `Monome` de `polynomial_mod.py`. Conservé tel
+quel, il a été remplacé par `polynomials/ModuloPolynomial.py` dans la suite du
+projet.
 
 ## Interface 1 : calculatrice graphique (`main.py`)
 
@@ -31,11 +39,26 @@ python main.py
 
 Un parseur d'expressions polynomiales bâti sur une grammaire BNF
 (`PolynomialBNF.py`, via `pyparsing`), utilisable en REPL pour taper
-directement des expressions et des affectations (`f = x + 5 - 7x^3`) :
+directement des expressions et des affectations de variables :
 
 ```bash
 python polyparse.py
 ```
+
+Exemple de session :
+
+```
+Type in the string to be parsed or 'quit' to exit the program
+> f = x + 5 - 7x^3
+-7x^3+x+5
+> 2*f
+-14x^3+2x+10
+> quit
+Good bye!
+```
+
+La variable `f` est mémorisée et réutilisable dans les expressions suivantes
+(comme `ans`, qui contient toujours le dernier résultat).
 
 Les deux interfaces sont des expérimentations indépendantes autour du même
 modèle de polynômes — `polyparse.py` ne remplace pas encore `main.py`, comme
