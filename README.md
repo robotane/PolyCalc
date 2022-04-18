@@ -45,20 +45,24 @@ directement des expressions et des affectations de variables :
 python polyparse.py
 ```
 
-Exemple de session :
+Exemple de session, avec produit, division exacte et composition d'opérations :
 
 ```
 Type in the string to be parsed or 'quit' to exit the program
-> f = x + 5 - 7x^3
--7x^3+x+5
-> 2*f
--14x^3+2x+10
+> p1 = (x^2+3x-1)*(x-2)
+x^3+x^2-7x+2
+> p2 = p1/(x-2)
+x^2+3x-1
+> p1^2 - p2
+x^6+2x^5-13x^4-10x^3+52x^2-31x+5
 > quit
 Good bye!
 ```
 
-La variable `f` est mémorisée et réutilisable dans les expressions suivantes
-(comme `ans`, qui contient toujours le dernier résultat).
+`p1` et `p2` sont mémorisées et réutilisables dans les expressions suivantes
+(comme `ans`, qui contient toujours le dernier résultat). La dernière ligne
+recombine les deux calculs précédents : `p1` élevé au carré, moins `p2`
+(retrouvé en divisant `p1` par `x-2`) — résultat revérifié indépendamment.
 
 Les deux interfaces sont des expérimentations indépendantes autour du même
 modèle de polynômes — `polyparse.py` ne remplace pas encore `main.py`, comme
